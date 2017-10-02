@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="robots" content="noindex,nofollow">
+<meta charset="ISO-8859-1">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<link href="css/stylesheet.css" rel="stylesheet" type="text/css">
+<title>Klaus training website.</title>
+</head>
+<style type="text/css">
+canvas {
+	border: 1px solid #d3d3d3;
+	background-color: #f1f1f1;
+}
+</style>
+<body onload='startGame("myCanvas")'>
+	<div class='page-container'>
+		<header> Welcome to Simple Virus War. </header>
+		<article>
+			
+			<section>
+				<div class='gametext'>
+					<p>So here is a little game under development. It is 4 viruses
+						fighting each other in a small memory space. You can pick which
+						algorithm to use for each virus, then start a run and see who
+						survives.</p>
+					<p>It is quite possible to get a stable scenario, with two or
+						more viruses surviving. So the game is limited to 500 rounds.</p>
+					<p>You can add player(s) to the game, too. Right now, only for
+						your own game and only temporarily. The additional players are
+						stored in your browser only. On page reload, you have to resubmit.
+					</p>
+				</div>
+
+				<div class='gameboard-container'>
+					<div class='gameboard-canvas'>
+						<canvas id="myCanvas"></canvas>
+					</div>
+					<div class='gameboard-controls'>
+						<form>
+							<!-- Options are set in JScript -->
+							<div>
+								<label class="gameboard-playerOne" for="playerOneSelect"
+									id="playerOne">Player One:</label> <select id='playerOneSelect'></select>
+							</div>
+							<div>
+								<label class="gameboard-playerTwo" for="playerTwoSelect"
+									id="playerTwo">Player Two:</label> <select id='playerTwoSelect'></select>
+							</div>
+							<div>
+								<label class="gameboard-playerThree" for="playerThreeSelect"
+									id="playerThree">Player Three:</label> <select
+									id='playerThreeSelect'></select>
+							</div>
+							<div>
+								<label class="gameboard-playerFour" for="playerFourSelect"
+									id="playerFour">Player Four:</label> <select
+									id='playerFourSelect'></select>
+							</div>
+						</form>
+						<div class="start-button-container">
+							<div class="start-button-element">
+								<button id='startButton' type='button'>Run a Game</button>
+							</div>
+						</div>
+
+					</div>
+				</div>
+			</section>
+			<section>
+				<div class="register-web-player-form">
+					<form>
+						<label>URL for your player:</label> <input id='addPlayerTypeInput'
+							type="url"></input>
+						<button id='addPlayerTypeButton' type='button'>Add</button>
+					</form>
+				</div>
+				<div class="register-web-player-text">
+					<details>
+						<summary>Requirements and specification of custom
+							players.</summary>
+
+						<p>A player has to be a public HTTP address (URL). The game
+							server will call the following methods:</p>
+						<ul>
+							<li>GET /startGame query parameters: int boardX, int boardY,
+								int numPlayers, int playerId <br> Expected return is a JSON
+								object depicting a SPAWN move. See below. There is no penalty
+								for returning a different move. But not spawning on the first
+								move means that there is no piece for the player on the board,
+								and consequently the player has lost the game after the first
+								round. Not likely that you want this. <br> Example:
+								http://&lt;yourUrl&gt;/startGame?boardX=40&amp;boardY=20&amp;numPlayers=4&amp;playerId=3
+							</li>
+							<li>GET /nextMove query parameters: none <br> Expected
+								return is JSON object depicting any legal move. See below.
+							</li>
+						</ul>
+						<p>Your methods need to return a JSON object as plain text.
+							The JSON needs to be { fromX : int, fromY : int, toX: int, toY:
+							int, moveType: string }. Where:</p>
+						<ul>
+							<li>fromX, fromY, toX, toY are numbers within the dimensions
+								of the board.</li>
+							<li>moveType is any of the following: SPAWN, MOVE, PASS,
+								FIRE
+								<ul>
+									<li>SPAWN - Your player places another piece on the board
+										at location toX/toY. Parameters fromX and fromY will be
+										ignored. Any piece already on the board at location toX/toY
+										will be removed (even if it is a piece owned by your player).
+										This is a costly move. Your player will be skipped for 5
+										rounds.</li>
+									<li>FIRE - Your player fires at the location toX/toY.
+										Parameters fromX and fromY will be ignored. Any piece on the
+										board at location toX/toY will be removed (even if it is a
+										piece owned by your player). This is a cheap move. Your player
+										will not be skipped.</li>
+
+									<li>MOVE - Your player moves a piece from location
+										fromX/fromY to toX/toY. Any piece on the board at location
+										toX/toY will be removed (even if it is a piece owned by your
+										player). This is a somewhat costly move. Your player will be
+										skipped for 2 rounds.</li>
+									<li>PASS - Your player passes. Likely not a good idea, but
+										possible. This is a cheap move. Your player will be not be
+										skipped.</li>
+								</ul>
+							<li>Any illegal move will be considered a PASS.</li>
+						</ul>
+						<p>Yes. Right now it is that simple and not all of the
+							parameters are actually useful. But there is more to come. Plan
+							here is to add methods informing your player of moves submitted
+							by other players. So, your player can learn and adjust, strategy
+							or tactics, if you like.</p>
+					</details>
+				</div>
+			</section>
+			
+		</article>
+	</div>
+
+	<script src='js/simplescripts.js'></script>
+	<script src='js/gameboard.js'></script>
+	<script>
+		initializePicture('pic');
+	</script>
+	<script>
+		$(document).ready(function() {
+			playerTypes.buildUIOptions();
+			//setPlayerSelectionColors();
+			pieces.init();
+			$("#startButton").click(function() {
+				runGame();
+			});
+			$("#addPlayerTypeButton").click(function() {
+				addPlayerType();
+			});
+		});
+	</script>
+</body>
+</html>

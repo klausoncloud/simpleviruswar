@@ -1,0 +1,207 @@
+/* over all rules */
+* {
+	box-sizing: border-box;
+}
+
+.page-container {
+    width: 1200px;
+}
+
+html, body {
+	margin: 0;
+	padding: 0;
+	background: #ddd;
+	color: #333;
+	font-family: 'Open Sans', 'Trebuchet MS', 'Arial', sans-serif;
+	font-size: 14px;
+}
+
+img {
+	max-width: 100%;
+	height: auto;
+}
+
+header, footer, article, section {
+	float: left;
+	padding: 10px;
+	width: 100%;
+}
+
+
+header, footer {
+	background-color: #333;
+	color: #fff;
+	text-align: right;
+	height: 100px;
+}
+
+header {
+	font-size: 1.8em;
+	font-weight: bold;
+}
+
+header big {
+	line-height: 130px;
+	vertical-align: bottom;
+}
+
+h1 {
+	padding: 0;
+	margin: 0 0 20px 0;
+}
+
+h2 {
+	margin: 30px 0 20px 0;
+}
+
+article section {
+	padding: 0;
+}
+
+/* game area layout */
+.gametext {
+	width: 350px;
+	float: left;
+	margin-right: 30px;
+}
+
+.gameboard-container {
+	display: -web-kit-flex;
+	display: flex;
+	width: 800px;
+
+	flex-direction: row;
+}
+
+.gameboard-canvas {
+	width: 420px;
+	flex: none;
+}
+
+.gameboard-controls {
+	width: 350px;
+	flex: none;
+}
+
+.gameboard-controls form {
+	display: table;
+}
+
+.gameboard-controls form div {
+	display: table-row;
+}
+
+.gameboard-controls form div label, .gameboard-controls form div select {
+	display: table-cell;
+	margin-bottom: 5px;
+}
+
+.gameboard-controls form div select {
+	width: 170pt;
+}
+
+.gameboard-controls form div label {
+	padding-right: 5%;
+	text-align: right;
+	width: 100pt;
+}
+
+.gameboard-controls .start-button-container {
+	width: 340px;
+	height:120px;
+	display: -webkit-flex;
+  display:         flex;
+  -webkit-align-items: center;
+          align-items: center;
+  -webkit-justify-content: center;
+          justify-content: center;
+}
+
+.gameboard-controls .start-button-element {
+}
+
+/*
+** The following classes are used in JavaScript functions.
+*/
+.gameboard-playerOne {
+	color: #cc0000;
+}
+
+/*
+** Used to depict the player's actions in the canvas.
+*/
+.gameboard-playerOne-hits {
+	color: #ff4d4d;
+}
+
+.gameboard-playerOne-miss {
+	color: #ffcccc;
+}
+
+.gameboard-playerTwo {
+	color: #0073e6;
+}
+
+.gameboard-playerTwo-hits {
+	color: #66b3ff;
+}
+
+.gameboard-playerTwo-miss {
+	color: #e6f2ff;
+}
+
+.gameboard-playerThree {
+	color: #00cc00;
+}
+
+.gameboard-playerThree-hits {
+	color: #ffc266;
+}
+
+.gameboard-playerThree-miss {
+	color: #ffebcc;
+}
+
+.gameboard-playerFour {
+	color: #ff9900;
+}
+
+.gameboard-playerFour-hits {
+	color: #66ff66;
+}
+
+.gameboard-playerFour-miss {
+	color: #ccffcc;
+}
+
+.gameboard-label-winner {
+	border-style: solid;
+}
+
+.gameboard-label-loser {
+	text-decoration: line-through;
+}
+
+.register-web-player-container {
+	
+}
+
+.register-web-player-form {
+	/*
+	width: 20%;
+	float: left;
+	margin-right: 2%;
+	*/
+	width: 350px;
+	float: left;
+	margin-right: 30px;
+}
+
+.register-web-player-text {
+	/*
+	width: 78%;
+	float: left;
+	margin-right: 0;
+	*/
+	width: 800px;
+}
