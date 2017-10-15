@@ -19,17 +19,14 @@ public class PlayerTester {
     	TestResult result = new TestResult();
     	
     	String progress = "";
+    	boolean passed = true;
     	try {
     		progress = "Checking startGame...";
     		Move move = virus.startGame(40, 20, 2, 0);
     		
     		if (move.moveType != MoveType.SPAWN) {
     			progress += "failed... did not SPAWN.";
-    			
-    			result.setMessage(progress);
-    	    	result.setPassed(false);
-    	    	
-    	    	return result;
+    			passed = false;
     		} else {
     			progress += "passed...";
     		}
@@ -62,6 +59,11 @@ public class PlayerTester {
     		virus.endOfGame(winnerIdList);
     		progress += "passed...";
     		
+    		result.setMessage(progress);
+	    	result.setPassed(passed);
+	    	
+	    	return result;
+    		
     	} catch (Exception e) {
 			progress += "=> Exception " + e.getMessage();
 			
@@ -70,11 +72,6 @@ public class PlayerTester {
 	    	
 	    	return result;
     	}
-    	
-    	result.setMessage(progress);
-    	result.setPassed(true);
-    	
-    	return result;
     }
     
     public class TestResult {

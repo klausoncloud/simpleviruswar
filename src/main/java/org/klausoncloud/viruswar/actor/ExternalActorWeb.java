@@ -27,6 +27,37 @@ import org.klausoncloud.viruswar.model.MoveType;
 public class ExternalActorWeb implements Actor {
 	static final int TIMEOUT = 1000; // Milli Sec
 	
+	// Query strings and Json IDs expected by the client
+	final static String SERVICE_PATH_STARTGAME = "startGame";
+	final static String QUERY_PARM_BOARDX = "boardX";
+	final static String QUERY_PARM_BOARDY = "boardY";
+	final static String QUERY_PARM_NUMPLAYERS = "numPlayers";
+	final static String QUERY_PARM_PLAYERID = "playerId";
+	
+	final static String SERVICE_PATH_NEXTMOVE = "nextMove";
+	
+	final static String SERVICE_PATH_MOVENOTIFICATION = "moveNotification";
+	final static String MOVE_NOTE_PARM_ACTORID = "actorId";
+	final static String MOVE_NOTE_PARM_VICTIMID = "victimId";
+	final static String MOVE_NOTE_PARM_POSX = "posX";
+	final static String MOVE_NOTE_PARM_POSY = "posY";
+	final static String MOVE_NOTE_PARM_BOXWIDTH = "boxWidth";
+	final static String MOVE_NOTE_PARM_BOXHEIGHT = "boxHeight";
+	final static String MOVE_NOTE_PARM_ISHIT = "isHit";
+	final static String MOVE_NOTE_PARM_ISDESTROYED = "isDestroyed";
+	final static String MOVE_NOTE_PARM_MOVETYPE = "moveType";
+	
+	final static String SERVICE_PATH_ENDOFGAME = "endOfGame";
+	final static String WINNER_ID = "id";
+	
+	// Json IDs sent by the client
+	final static String MOVE_PARM_FROMX = "fromX";
+	final static String MOVE_PARM_FROMY = "fromY";
+	final static String MOVE_PARM_TOX = "toX";
+	final static String MOVE_PARM_TOY = "toY";
+	final static String MOVE_PARM_TYPE = "moveType";
+	
+	
 	ClientConfig config = new ClientConfig();
     Client client = ClientBuilder.newClient(config);
     WebTarget service;
@@ -41,19 +72,18 @@ public class ExternalActorWeb implements Actor {
 	
 	@Override
 	public Move startGame(int width, int height, int virusNumber, int id) {
-		System.out.println("ExternalActorWeb: startGame");
-		WebTarget myService = service.path("startGame")
-    			.queryParam("boardX", width)
-    			.queryParam("boardY", height)
-    			.queryParam("numPlayers", virusNumber)
-    			.queryParam("playerId", id);
+		System.out.println("ExternalActorWeb: " + SERVICE_PATH_STARTGAME);
+		
+		WebTarget myService = service.path(SERVICE_PATH_STARTGAME)
+    			.queryParam(QUERY_PARM_BOARDX, width)
+    			.queryParam(QUERY_PARM_BOARDY, height)
+    			.queryParam(QUERY_PARM_NUMPLAYERS, virusNumber)
+    			.queryParam(QUERY_PARM_PLAYERID, id);
     	SyncInvoker myBuilder = myService.request().accept(MediaType.TEXT_PLAIN_TYPE);
     	String responseString;
-    	try {
-    	    responseString = myBuilder.get(String.class);
-    	} catch (Exception e) {
-    		throw e;
-    	}
+
+    	responseString = myBuilder.get(String.class);
+
     	JsonReader reader = Json.createReader(new StringReader(responseString));        
         JsonObject moveObject = reader.readObject();         
         reader.close();
@@ -63,21 +93,28 @@ public class ExternalActorWeb implements Actor {
 
 	@Override
 	public Move nextMove() {
-		System.out.println("ExternalActorWeb: nextMove");
-        String path = "nextMove";
-    	
-    	JsonObject moveJson = getMove(path);
-    	
-    	return parseMove(moveJson);
-    }
+		System.out.println("ExternalActorWeb: " + SERVICE_PATH_NEXTMOVE);
+
+		String responseString;
+		WebTarget myService = service.path(SERVICE_PATH_NEXTMOVE);
+		SyncInvoker myBuilder = myService.request().accept(MediaType.TEXT_PLAIN_TYPE);
+		responseString = myBuilder.get(String.class);
+
+		JsonReader reader = Json.createReader(new StringReader(responseString));
+		JsonObject moveObject = reader.readObject();
+		reader.close();
+
+		return parseMove(moveObject);
+	}
 
 	@Override
 	public void moveNotification(List<MoveNotification> moveList) {
-		System.out.println("ExternalActorWeb: moveNotification");
-		WebTarget myService = service.path("moveNotification");
+		//System.out.println("ExternalActorWeb: " + SERVICE_PATH_MOVENOTIFICATION);
+		WebTarget myService = service.path(SERVICE_PATH_MOVENOTIFICATION);
     	SyncInvoker myBuilder = myService.request();
     	Response response;
     	try {
+    		//System.out.println(moveListToJSON(moveList));
     	    response = myBuilder.post(Entity.json(moveListToJSON(moveList)));
     	    if (response.getStatus() >= 400) {
     	    	System.out.println("Something went wrong with the external player. Responded: " + response.getStatus());
@@ -89,13 +126,12 @@ public class ExternalActorWeb implements Actor {
     		System.out.println(e.toString());
     		throw e;
     	}
-    	System.out.println("ExternalActorWeb: moveNotification");
 	}
 
 	@Override
 	public void endOfGame(List<Integer> winnerIdList) {
-		System.out.println("ExternalActorWeb: endOfGame");
-		WebTarget myService = service.path("endOfGame");
+		System.out.println("ExternalActorWeb: " + SERVICE_PATH_ENDOFGAME);
+		WebTarget myService = service.path(SERVICE_PATH_ENDOFGAME);
     	SyncInvoker myBuilder = myService.request();
     	Response response;
     	try {
@@ -110,48 +146,45 @@ public class ExternalActorWeb implements Actor {
     		throw e;
     	}
 	}
-	
-	private JsonObject getMove(String path) {
-    	String responseString;
-    	try {
-    	//responseString = service.path(path).request().accept(MediaType.APPLICATION_JSON).get(String.class);
-    	WebTarget myService = service.path(path);
-    	SyncInvoker myBuilder = myService.request().accept(MediaType.TEXT_PLAIN_TYPE);
-    	responseString = myBuilder.get(String.class);
-    	} catch (Exception e) {
-    		throw e;
-    	}
-    	JsonReader reader = Json.createReader(new StringReader(responseString));        
-        JsonObject moveObject = reader.readObject();         
-        reader.close();
-        
-        return moveObject;
-    }
     
     private Move parseMove(JsonObject moveJson) {
     	// toDo parsing error handling
-    	int fromX = moveJson.getInt("fromX");    	
-    	int fromY = moveJson.getInt("fromY");
-    	int toX = moveJson.getInt("toX");
-    	int toY = moveJson.getInt("toY");
-    	MoveType moveType = MoveType.valueOf(moveJson.getString("moveType"));
+    	int fromX = moveJson.getInt(MOVE_PARM_FROMX);    	
+    	int fromY = moveJson.getInt(MOVE_PARM_FROMY);
+    	int toX = moveJson.getInt(MOVE_PARM_TOX);
+    	int toY = moveJson.getInt(MOVE_PARM_TOY);
+    	MoveType moveType = MoveType.valueOf(moveJson.getString(MOVE_PARM_TYPE));
     	return new Move(moveType, fromX, fromY, toX, toY);
     }
     
    private String moveListToJSON(List<MoveNotification>moveList)  {
 	   JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
 		for (MoveNotification move : moveList) {
-			jsonArrayBuilder.add(move.jsonBuilder());
+			jsonArrayBuilder.add(jsonBuilder(move));
 		}
 		JsonArray jsonArray = jsonArrayBuilder.build();
 		return jsonArray.toString();
    }
    
+   private JsonObjectBuilder jsonBuilder(MoveNotification move) {
+		JsonObjectBuilder jsonBuilder = Json.createObjectBuilder();
+		jsonBuilder.add(MOVE_NOTE_PARM_ACTORID, move.getActorId())
+			.add(MOVE_NOTE_PARM_VICTIMID, move.getVictimId())
+			.add(MOVE_NOTE_PARM_POSX, move.getPosX())
+			.add(MOVE_NOTE_PARM_POSY, move.getPosY())
+			.add(MOVE_NOTE_PARM_BOXWIDTH, move.getBoxWidth())
+			.add(MOVE_NOTE_PARM_BOXHEIGHT, move.getBoxHeight())
+			.add(MOVE_NOTE_PARM_ISHIT, move.isHit())
+			.add(MOVE_NOTE_PARM_ISDESTROYED, move.isDestroyed())
+			.add(MOVE_NOTE_PARM_MOVETYPE, move.getMoveType().toString());
+		return jsonBuilder;
+	}
+   
    private String winnerListToJSON(List<Integer> winnerIdList)  {
 	   JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
 		for (Integer id : winnerIdList) {
 			JsonObjectBuilder jsonBuilder = Json.createObjectBuilder();
-			jsonBuilder.add("id", id);
+			jsonBuilder.add(WINNER_ID, id);
 			jsonArrayBuilder.add(jsonBuilder);
 		}
 		JsonArray jsonArray = jsonArrayBuilder.build();

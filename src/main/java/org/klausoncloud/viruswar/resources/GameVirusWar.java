@@ -16,6 +16,7 @@ import org.klausoncloud.viruswar.actor.Actor;
 import org.klausoncloud.viruswar.actor.BuiltActorMoveFire;
 import org.klausoncloud.viruswar.actor.BuiltInActorFire;
 import org.klausoncloud.viruswar.actor.BuiltInActorSpawn;
+import org.klausoncloud.viruswar.actor.ExternalActorDocker;
 import org.klausoncloud.viruswar.actor.ExternalActorWeb;
 
 @Path("/")
@@ -58,26 +59,33 @@ public class GameVirusWar {
 	@Consumes("application/json")
 	public Response startGame(ArrayList<PlayerResource> players) {
 		ArrayList<Actor> viruses = new ArrayList<Actor>(players.size());
-		for (PlayerResource player : players) {
-			if (player.getType().equals("url")) {
-			    ExternalActorWeb virus = new ExternalActorWeb(player.getData());
-			    viruses.add(virus);
-			} else {
-				viruses.add(newVirusFor(Integer.parseInt(player.getData())));
+		try {
+			for (PlayerResource player : players) {
+				
+				System.out.println(
+						"Player id: " + player.getId() + " type: " + player.getType() + " data: " + player.getData());
+				
+				if (player.getType().equals("url")) {
+					ExternalActorWeb virus = new ExternalActorWeb(player.getData());
+					viruses.add(virus);
+				} else if (player.getType().equals("code")) {
+					viruses.add(new ExternalActorDocker(player.getData()));
+				} else {
+					viruses.add(newVirusFor(Integer.parseInt(player.getData())));
+				}
 			}
-			
-			System.out.println("Player id: " + player.getId()
-					+ " type: " + player.getType()
-					+ " data: " + player.getData());
+
+			Umpire umpire = new Umpire(40, 20, viruses);
+			return Response.status(200).entity(umpire.runGame().toJsonString()).build();
+		} catch (Exception e) {
+			e.printStackTrace();
+			return Response.status(500).entity(e.toString()).build();
 		}
-		
-		Umpire umpire = new Umpire(40, 20, viruses);
-		return Response.status(200).entity(umpire.runGame().toJsonString()).build();
 	}
 	
 
 	@POST
-	@Path("/testPlayer")
+	@Path("testPlayer")
 	@Produces( "application/json;charset=utf-8" )
 	@Consumes("application/json")
 	public Response testPlayer(PlayerResource player) {
@@ -87,15 +95,22 @@ public class GameVirusWar {
 				+ " data: " + player.getData());
 	
 		Actor virus;
-	    if (player.getType().equals("url")) {
-		    virus = new ExternalActorWeb(player.getData());
-		} else {
-			virus = newVirusFor(Integer.parseInt(player.getData()));
+		try {
+			if (player.getType().equals("url")) {
+				virus = new ExternalActorWeb(player.getData());
+			} else if (player.getType().equals("code")) {
+				virus = new ExternalActorDocker(player.getData());
+			} else {
+				virus = newVirusFor(Integer.parseInt(player.getData()));
+			}
+
+			PlayerTester tester = new PlayerTester(virus);
+			String result = tester.testVirus().toJsonString();
+			System.out.println(result);
+			return Response.status(200).entity(result).build();
+		} catch (Exception e) {
+			e.printStackTrace();
+			return Response.status(500).entity(e.toString()).build();
 		}
-		
-		PlayerTester tester = new PlayerTester(virus);
-		String result = tester.testVirus().toJsonString();
-		System.out.println(result);
-		return Response.status(200).entity(result).build();
 	}
 }

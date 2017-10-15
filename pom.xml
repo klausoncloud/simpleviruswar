@@ -36,6 +36,16 @@
     	<artifactId>javax.json</artifactId>
     	<version>1.1.0-M1</version>
     </dependency>
+    <dependency>
+    	<groupId>com.spotify</groupId>
+    	<artifactId>docker-client</artifactId>
+    	<version>8.9.1</version>
+    </dependency>
+    <dependency>
+    	<groupId>com.github.rholder</groupId>
+    	<artifactId>guava-retrying</artifactId>
+    	<version>2.0.0</version>
+    </dependency>
   </dependencies>
   
   <build>

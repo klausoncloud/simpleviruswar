@@ -68,7 +68,7 @@ public class GameReportTest  extends TestCase {
     
     private boolean testConversion(MoveResult moveResult, String expected) {
     	GameReport gameReport = new GameReport();
-    	gameReport.addMoveEntryList(moveResult);
+    	gameReport.addMoveResult(moveResult);
     	if (expected.equals(gameReport.toJsonString())) {
     		return true;
     	} else {

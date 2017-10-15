@@ -182,18 +182,4 @@ public class MoveNotification {
 				+ ", boxWidth=" + boxWidth + ", boxHeight=" + boxHeight + ", isHit=" + isHit + ", isDestroyed="
 				+ isDestroyed + ", moveType=" + moveType + "]";
 	}
-	
-	public JsonObjectBuilder jsonBuilder() {
-		JsonObjectBuilder jsonBuilder = Json.createObjectBuilder();
-		jsonBuilder.add("actorId", actorId)
-			.add("victimId", victimId)
-			.add("posX", posX)
-			.add("posY", posY)
-			.add("boxWidth", boxWidth)
-			.add("boxHeight", boxHeight)
-			.add("isHit", isHit)
-			.add("isDestroyed", isDestroyed)
-			.add("moveType", moveType.toString());
-		return jsonBuilder;
-	}
 }

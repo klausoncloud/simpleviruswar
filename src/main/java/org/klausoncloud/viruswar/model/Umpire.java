@@ -37,18 +37,16 @@ public class Umpire {
 		{ // First round, special processing
 			ArrayList<MoveResult> movesFirstRound = getAndProcessStartMoves();
 			notifyVirusActors(movesFirstRound);
-			gameReport.addMoveEntry(movesFirstRound);
+			gameReport.addMoveResultList(movesFirstRound);
 		}
 		
 		// Other rounds
 		while (gameNotOver() && (roundsPlayed++ < maxRounds)) {
 			ArrayList<MoveResult> movesThisRound = getAndProcessMoves();
-			gameReport.addMoveEntry(movesThisRound);
 			notifyVirusActors(movesThisRound);
+			gameReport.addMoveResultList(movesThisRound);
 		}
-		
-		gameReport.addMoveEntry(new MoveEntry(0, 0, 0, Impact.END));
-		processWinner(gameReport);
+		gameReport.addMoveEntryList(processWinner());
 		
 		return gameReport;
 	}
@@ -101,12 +99,20 @@ public class Umpire {
 		return movesThisRound;
 	}
 	
-	protected void processWinner(GameReport gameReport) {
+	protected ArrayList<MoveEntry> processWinner() {
+		ArrayList<MoveEntry> winnerEntries = new ArrayList<MoveEntry>();
+		ArrayList<Integer> winnerIds = new ArrayList<Integer>();
 		for (Player virusStatus : board.getPlayerStatusList()) {
 			if (board.isAlive(virusStatus)) {
-				gameReport.addMoveEntry(new MoveEntry(virusStatus.getId(), 0, 0, Impact.WIN));
+				winnerEntries.add(new MoveEntry(virusStatus.getId(), 0, 0, Impact.WIN));
+				winnerIds.add(virusStatus.getId());
 			}
 		}
+		winnerEntries.add(new MoveEntry(0, 0, 0, Impact.END));
+		
+		actorManager.endOfGame(board.getPlayerStatusList(), winnerIds);
+		
+		return winnerEntries;
 	}
     
 	protected MoveResult processMove(Move move, Player virusStatus) {

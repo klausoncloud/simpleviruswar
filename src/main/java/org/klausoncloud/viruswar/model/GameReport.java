@@ -16,14 +16,18 @@ public class GameReport {
 		moveEntries.add(moveEntry);
 	}
 	
-	public void addMoveEntry(ArrayList<MoveResult> moveResultList) {
+	void addMoveEntryList(ArrayList<MoveEntry> moveEntries) {
+		this.moveEntries.addAll(moveEntries);
+	}
+	
+	public void addMoveResultList(ArrayList<MoveResult> moveResultList) {
 		for (MoveResult moveResult : moveResultList) {
-			addMoveEntryList(moveResult);
+			addMoveResult(moveResult);
 		}
 	}
 	
 	// WE cannot move the conversion into MoveEntry as one MoveResult can create several MoveEntries.
-	public void addMoveEntryList(MoveResult moveResult) {
+	protected void addMoveResult(MoveResult moveResult) {
 		switch (moveResult.getMoveResultType()) {
 		case FIREHIT:
 			moveEntries.add(new MoveEntry(moveResult.getActorId(), moveResult.getToX(), moveResult.getToY(), Impact.HIT));
