@@ -82,7 +82,7 @@ public class ActorComunicationManager {
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			Logger.logException(this.getClass(), "getAllMoves", Logger.ERROR, e);
 			throw new IllegalStateException();
 		}
 

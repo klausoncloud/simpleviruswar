@@ -20,6 +20,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.ClientProperties;
+import org.klausoncloud.viruswar.model.Logger;
 import org.klausoncloud.viruswar.model.Move;
 import org.klausoncloud.viruswar.model.MoveNotification;
 import org.klausoncloud.viruswar.model.MoveType;
@@ -39,13 +40,14 @@ public class ExternalActorWeb implements Actor {
 	final static String SERVICE_PATH_MOVENOTIFICATION = "moveNotification";
 	final static String MOVE_NOTE_PARM_ACTORID = "actorId";
 	final static String MOVE_NOTE_PARM_VICTIMID = "victimId";
-	final static String MOVE_NOTE_PARM_POSX = "posX";
-	final static String MOVE_NOTE_PARM_POSY = "posY";
+	final static String MOVE_NOTE_PARM_POSX = "col";
+	final static String MOVE_NOTE_PARM_POSY = "row";
 	final static String MOVE_NOTE_PARM_BOXWIDTH = "boxWidth";
 	final static String MOVE_NOTE_PARM_BOXHEIGHT = "boxHeight";
 	final static String MOVE_NOTE_PARM_ISHIT = "isHit";
 	final static String MOVE_NOTE_PARM_ISDESTROYED = "isDestroyed";
 	final static String MOVE_NOTE_PARM_MOVETYPE = "moveType";
+	final static String MOVE_PARAM_ERROR = "error";
 	
 	final static String SERVICE_PATH_ENDOFGAME = "endOfGame";
 	final static String WINNER_ID = "id";
@@ -72,7 +74,7 @@ public class ExternalActorWeb implements Actor {
 	
 	@Override
 	public Move startGame(int width, int height, int virusNumber, int id) {
-		System.out.println("ExternalActorWeb: " + SERVICE_PATH_STARTGAME);
+		Logger.logMessage(this.getClass(), "startGame", Logger.INFO, "ExternalActorWeb: " + SERVICE_PATH_STARTGAME);
 		
 		WebTarget myService = service.path(SERVICE_PATH_STARTGAME)
     			.queryParam(QUERY_PARM_BOARDX, width)
@@ -93,7 +95,7 @@ public class ExternalActorWeb implements Actor {
 
 	@Override
 	public Move nextMove() {
-		System.out.println("ExternalActorWeb: " + SERVICE_PATH_NEXTMOVE);
+		Logger.logMessage(this.getClass(), "nextMove", Logger.INFO, "ExternalActorWeb: " + SERVICE_PATH_NEXTMOVE);
 
 		String responseString;
 		WebTarget myService = service.path(SERVICE_PATH_NEXTMOVE);
@@ -109,52 +111,60 @@ public class ExternalActorWeb implements Actor {
 
 	@Override
 	public void moveNotification(List<MoveNotification> moveList) {
-		//System.out.println("ExternalActorWeb: " + SERVICE_PATH_MOVENOTIFICATION);
+		Logger.logMessage(this.getClass(), "moveNotification", Logger.INFO, "ExternalActorWeb: " + SERVICE_PATH_MOVENOTIFICATION);
 		WebTarget myService = service.path(SERVICE_PATH_MOVENOTIFICATION);
     	SyncInvoker myBuilder = myService.request();
     	Response response;
     	try {
-    		//System.out.println(moveListToJSON(moveList));
     	    response = myBuilder.post(Entity.json(moveListToJSON(moveList)));
     	    if (response.getStatus() >= 400) {
-    	    	System.out.println("Something went wrong with the external player. Responded: " + response.getStatus());
+    	    	Logger.logMessage(this.getClass(), "moveNotification", Logger.INFO, "Something went wrong with the external player. Responded: " + response.getStatus());
     	    }
     	    
     	    // Needs to go into finally
     	    response.close();
     	} catch (Exception e) {
-    		System.out.println(e.toString());
+    		Logger.logException(this.getClass(), "moveNotification", Logger.WARNING, e);
     		throw e;
     	}
 	}
 
 	@Override
 	public void endOfGame(List<Integer> winnerIdList) {
-		System.out.println("ExternalActorWeb: " + SERVICE_PATH_ENDOFGAME);
+		Logger.logMessage(this.getClass(), "endOfGame", Logger.INFO, "ExternalActorWeb: " + SERVICE_PATH_ENDOFGAME);
 		WebTarget myService = service.path(SERVICE_PATH_ENDOFGAME);
     	SyncInvoker myBuilder = myService.request();
     	Response response;
     	try {
     	    response = myBuilder.post(Entity.json(winnerListToJSON(winnerIdList)));
     	    if (response.getStatus() >= 400) {
-    	    	System.out.println("Something went wrong with the external player. Responded: " + response.getStatus());
+    	    	Logger.logMessage(this.getClass(), "endOfGame", Logger.INFO, "Something went wrong with the external player. Responded: " + response.getStatus());
     	    }
     	    
     	    // Needs to go into finally
     	    response.close();
     	} catch (Exception e) {
+    		Logger.logException(this.getClass(), "endOfGame", Logger.WARNING, e);
     		throw e;
     	}
 	}
     
     private Move parseMove(JsonObject moveJson) {
     	// toDo parsing error handling
-    	int fromX = moveJson.getInt(MOVE_PARM_FROMX);    	
-    	int fromY = moveJson.getInt(MOVE_PARM_FROMY);
-    	int toX = moveJson.getInt(MOVE_PARM_TOX);
-    	int toY = moveJson.getInt(MOVE_PARM_TOY);
     	MoveType moveType = MoveType.valueOf(moveJson.getString(MOVE_PARM_TYPE));
-    	return new Move(moveType, fromX, fromY, toX, toY);
+    	
+    	if (moveType == MoveType.ERROR) {
+    		String errorMessage = moveJson.getString(MOVE_PARAM_ERROR);
+    		return Move.failedToMove(errorMessage);
+    	} else {
+    		int fromX = moveJson.getInt(MOVE_PARM_FROMX);    	
+        	int fromY = moveJson.getInt(MOVE_PARM_FROMY);
+        	int toX = moveJson.getInt(MOVE_PARM_TOX);
+        	int toY = moveJson.getInt(MOVE_PARM_TOY);
+        	
+        	return new Move(moveType, fromX, fromY, toX, toY);
+    	}
+    	
     }
     
    private String moveListToJSON(List<MoveNotification>moveList)  {

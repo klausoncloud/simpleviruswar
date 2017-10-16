@@ -6,17 +6,26 @@ package org.klausoncloud.viruswar.model;
  * assume another virus' identity.
  */
 public class Move {
-    MoveType moveType = MoveType.PASS;
+    MoveType moveType = MoveType.ERROR;
     int fromX = 0, fromY = 0;
     int toX = 0, toY = 0;
+    String errorMessage;
     
 	public Move(MoveType moveType, int fromX, int fromY, int toX, int toY) {
-		super();
 		this.moveType = moveType;
 		this.fromX = fromX;
 		this.fromY = fromY;
 		this.toX = toX;
 		this.toY = toY;
+	}
+	
+	public Move(String errorMessage) {
+		this.moveType = MoveType.ERROR;
+		this.errorMessage = errorMessage;
+	}
+	
+	public static Move failedToMove(String errorMessage) {
+		return new Move(errorMessage);
 	}
 
 	public MoveType getMoveType() {

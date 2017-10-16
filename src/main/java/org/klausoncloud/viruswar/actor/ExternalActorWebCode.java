@@ -7,6 +7,8 @@ import javax.ws.rs.client.SyncInvoker;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 
+import org.klausoncloud.viruswar.model.Logger;
+
 public class ExternalActorWebCode extends ExternalActorWeb {
 	
 	final static String SERVICE_PATH_SETCODE = "setCode";
@@ -18,8 +20,9 @@ public class ExternalActorWebCode extends ExternalActorWeb {
 		super(url);
 	}
 
-	public void setCode(String code) {
-		System.out.println("ExternalActorWeb: " + SERVICE_PATH_SETCODE);
+	public void setCode(String code) throws Exception {
+		Logger.logMessage(this.getClass(), "setCode", Logger.INFO, "ExternalActorWeb: " + SERVICE_PATH_SETCODE);
+		
 		WebTarget myService = service.path(SERVICE_PATH_SETCODE);
     	SyncInvoker myBuilder = myService.request();
     	Response response;
@@ -27,24 +30,28 @@ public class ExternalActorWebCode extends ExternalActorWeb {
     		JsonObjectBuilder jsonBuilder = Json.createObjectBuilder();
 			jsonBuilder.add(CODE_PARM, code);
 			String str = jsonBuilder.build().toString();
+			
 			System.out.println(str);
+			Logger.logMessage(this.getClass(), "setCode", Logger.INFO, "Code >>>>");
+			Logger.logMessage(this.getClass(), "setCode", Logger.INFO, str);
+			Logger.logMessage(this.getClass(), "setCode", Logger.INFO, "<<<<");
+			
     	    response = myBuilder.post(Entity.json(str));
     	    if (response.getStatus() >= 400) {
-    	    	System.out.println("Something went wrong with the external player. Responded: " + response.getStatus());
-    	    	// Todo: Raise an exception.
+    	    	throw new Exception("Something went wrong with the external player. Responded: " + response.getStatus());
     	    }
-    	    System.out.println("Done setting code.");
+    	    Logger.logMessage(this.getClass(), "setCode", Logger.INFO, "Done.");
     	    
     	    // Needs to go into finally
     	    response.close();
     	} catch (Exception e) {
-    		System.out.println("SetCode - Exception: " + e.getMessage());
-    		e.printStackTrace();
+    		Logger.logException(this.getClass(), "setCode", Logger.ERROR, e);
     		throw e;
     	}
 	}
 	
 	public boolean isResponding() {
+		//Logger.logMessage(this.getClass(), "isResponding", Logger.INFO, "ExternalActorWeb: " + SERVICE_PATH_ISRUNNING);
 		WebTarget myService = service.path(SERVICE_PATH_ISRUNNING);
     	SyncInvoker myBuilder = myService.request();
     	Response response;
@@ -63,12 +70,11 @@ public class ExternalActorWebCode extends ExternalActorWeb {
     	    // Needs to go into finally
     	    response.close();
     	    
-    	    System.out.println(message);
+    	    Logger.logMessage(this.getClass(), "isResponding", Logger.INFO, message);
     	    return result;
  
     	} catch (Exception e) {
-    		System.out.println("IsRunning - Exception: " + e.getMessage());
-    		//e.printStackTrace();
+    		//Logger.logException(this.getClass(), "isResponding", Logger.INFO, e);
     		throw e;
     	}
 	}

@@ -10,6 +10,7 @@ import javax.ws.rs.DefaultValue;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
+import org.klausoncloud.viruswar.model.Logger;
 import org.klausoncloud.viruswar.model.PlayerTester;
 import org.klausoncloud.viruswar.model.Umpire;
 import org.klausoncloud.viruswar.actor.Actor;
@@ -23,6 +24,7 @@ import org.klausoncloud.viruswar.actor.ExternalActorWeb;
 public class GameVirusWar {
 
 
+	// Deprecated! Only for compatibility with the old UI.
 	@GET
 	@Path("start")
 	@Produces( "application/json;charset=utf-8" )
@@ -62,8 +64,11 @@ public class GameVirusWar {
 		try {
 			for (PlayerResource player : players) {
 				
-				System.out.println(
-						"Player id: " + player.getId() + " type: " + player.getType() + " data: " + player.getData());
+				Logger.logMessage(this.getClass(), "startGame", Logger.INFO,
+						"Player id: " 
+				        + player.getId() 
+				        + " type: " + player.getType() 
+				        + " data: " + player.getData());
 				
 				if (player.getType().equals("url")) {
 					ExternalActorWeb virus = new ExternalActorWeb(player.getData());
@@ -78,7 +83,7 @@ public class GameVirusWar {
 			Umpire umpire = new Umpire(40, 20, viruses);
 			return Response.status(200).entity(umpire.runGame().toJsonString()).build();
 		} catch (Exception e) {
-			e.printStackTrace();
+			Logger.logException(this.getClass(), "startGame", Logger.ERROR, e);
 			return Response.status(500).entity(e.toString()).build();
 		}
 	}
@@ -90,7 +95,8 @@ public class GameVirusWar {
 	@Consumes("application/json")
 	public Response testPlayer(PlayerResource player) {
 			
-		System.out.println("Player id: " + player.getId()
+		Logger.logMessage(this.getClass(), "testPLayer", Logger.INFO,
+				"Player id: " + player.getId()
 				+ " type: " + player.getType()
 				+ " data: " + player.getData());
 	
@@ -106,10 +112,13 @@ public class GameVirusWar {
 
 			PlayerTester tester = new PlayerTester(virus);
 			String result = tester.testVirus().toJsonString();
-			System.out.println(result);
+			
+			Logger.logMessage(this.getClass(), "startGame", Logger.INFO,
+			        result);
+			
 			return Response.status(200).entity(result).build();
 		} catch (Exception e) {
-			e.printStackTrace();
+			Logger.logException(this.getClass(), "testPlayer", Logger.ERROR, e);
 			return Response.status(500).entity(e.toString()).build();
 		}
 	}

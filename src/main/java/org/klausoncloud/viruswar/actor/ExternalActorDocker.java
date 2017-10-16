@@ -8,7 +8,9 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
+import org.klausoncloud.viruswar.model.Logger;
 import org.klausoncloud.viruswar.model.Move;
 import org.klausoncloud.viruswar.model.MoveNotification;
 
@@ -21,6 +23,7 @@ import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerClient.ListContainersParam;
 import com.spotify.docker.client.DockerClient.LogsParam;
+import com.spotify.docker.client.LogMessage;
 import com.spotify.docker.client.LogStream;
 import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.docker.client.messages.Container;
@@ -54,7 +57,8 @@ public class ExternalActorDocker implements Actor {
 	
 	public ExternalActorDocker(String code) throws Exception {
 		
-		System.out.println("Creating container with code: " + code);
+		Logger.logMessage(this.getClass(), "contructor", Logger.INFO, "Creating container with code: " + code);
+		
 		// Build the container
 		docker = DefaultDockerClient.builder()
 			    .uri(URI.create("http://localhost:2375"))
@@ -93,7 +97,7 @@ public class ExternalActorDocker implements Actor {
 			// Inspect container
 			final ContainerInfo info = docker.inspectContainer(containerId);
 			if (info.state().running()) {
-				System.out.println("Container reports it is running.");
+				Logger.logMessage(this.getClass(), "contructor", Logger.INFO, "Container reports it is running.");
 				
 				dockerActor = new ExternalActorWebCode(ACTOR_URL + containerPort);
 				if (!actorIsResponding()) {
@@ -101,27 +105,42 @@ public class ExternalActorDocker implements Actor {
 				}
 				
 				// Load the code into the container
-				System.out.println("Sending code.");
 				dockerActor.setCode(code);
-				System.out.println("Code set.");
 			} else {
 				// Darn. Need to abort.
 				throw new Exception("Container did not start. " + info.state().toString());
 			}
 			
-			final String logs;
-			try (LogStream stream = docker.logs(containerId, LogsParam.stdout(), LogsParam.stderr())) {
-			  logs = stream.readFully();
-			  System.out.println("Container logs >>>>");
-			  System.out.println(logs);
-			  System.out.println("<<<<");
-			}
+			// Checking if the actor logged errors
+			checkContainerLogsAndForwardErrors("constructor", Logger.ERROR);
 			
 		} catch (DockerException | InterruptedException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Logger.logException(this.getClass(), "contructor", Logger.ERROR, e);
 			throw e;
 		}
+	}
+	
+	static final String ERROR_PREFIX = "ERROR";
+	
+	private boolean checkContainerLogsAndForwardErrors(String method, int severity) throws Exception {
+		boolean errorsFound = false;
+		try {
+			LogStream stream = docker.logs(containerId, LogsParam.stdout(), LogsParam.stderr());
+			String logs = stream.readFully();
+			String [] logLines = logs.split("\n");
+			for (String line : logLines) {
+				if (line.startsWith(ERROR_PREFIX)) {
+					errorsFound = true;
+					Logger.logMessage(this.getClass(), method + "/" + "checkContainerLogsAndForwardErrors", severity, line);
+				}
+			}
+		} catch (Exception e) {
+			Logger.logException(this.getClass(), "checkContainerLogsAndForwardErrors", Logger.ERROR, e);
+			throw e;
+		}
+		
+		return errorsFound;
 	}
 	
 	final static int FIND_CONTAINER_NAME_MAX_ATTEMPTS = 3;
@@ -141,11 +160,8 @@ public class ExternalActorDocker implements Actor {
 		        .build();
 		try {
 		    return retryer.call(callable);
-		} catch (RetryException e) {
-		    e.printStackTrace();
-		    return null;
-		} catch (ExecutionException e) {
-		    e.printStackTrace();
+		} catch (RetryException | ExecutionException e) {
+			Logger.logException(this.getClass(), "generateContainerNameAndPort", Logger.INFO, e);
 		    return null;
 		}
 	}
@@ -162,15 +178,18 @@ public class ExternalActorDocker implements Actor {
 				continue;
 			}
 			
-			// Docker puts the / in front of the name.
-			// Expected pattern is </><name>-<port>
+			// Docker puts a / in front of the container name. So:
+			// Our generated container names have the pattern of </><name>-<port> and should only have one name.
+			final int NAME_IDX = 1;
+			final int PORT_IDX = 2;
+			final int EXPECTED_PARTS = 3;
 			String[] nameParts = container.names().get(0).split(CONTAINER_NAME_DELIMITER_REGEX);
 			
-			if (!nameParts[1].equals(CONTAINER_BASE_NAME) || nameParts.length < 1) {
+			if (nameParts.length != EXPECTED_PARTS || !nameParts[NAME_IDX].equals(CONTAINER_BASE_NAME)) {
 				continue;
 			}
 			try {
-			    int containerNumber = Integer.parseInt(nameParts[2]);
+			    int containerNumber = Integer.parseInt(nameParts[PORT_IDX]);
 			    if (containerNumber > highNumber) {
 			    	highNumber = containerNumber;
 			    }
@@ -213,7 +232,7 @@ public class ExternalActorDocker implements Actor {
 					containerId = null;
 				}
 			} catch (DockerException | InterruptedException e) {
-				e.printStackTrace();
+				Logger.logException(this.getClass(), "destroyContainerAndClose", Logger.ERROR, e);
 			} finally {
 				// Close the docker client
 				docker.close();
@@ -237,11 +256,8 @@ public class ExternalActorDocker implements Actor {
 		        .build();
 		try {
 		    retryer.call(callable);
-		} catch (RetryException e) {
-		    e.printStackTrace();
-		    return false;
-		} catch (ExecutionException e) {
-		    e.printStackTrace();
+		} catch (RetryException | ExecutionException e) {
+			Logger.logException(this.getClass(), "actorIsResponding", Logger.INFO, e);
 		    return false;
 		}
 		return true;
@@ -252,19 +268,12 @@ public class ExternalActorDocker implements Actor {
 		// Accept an exception if constructor failed
 		Move result =  dockerActor.startGame(width, height, virusNumber, id);
 		
-		String logs;
-		try (LogStream stream = docker.logs(containerId, LogsParam.stdout(), LogsParam.stderr())) {
-			  logs = stream.readFully();
-			  System.out.println("Container logs >>>>");
-			  System.out.println(logs);
-			  System.out.println("<<<<");
-			} catch (DockerException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+		try {
+			checkContainerLogsAndForwardErrors("startGame", Logger.WARNING);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			Logger.logException(this.getClass(), "startGame", Logger.WARNING, e);
+		}
 		
 		return result;
 	}

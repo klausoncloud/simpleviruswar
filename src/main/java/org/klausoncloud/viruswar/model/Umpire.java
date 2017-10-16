@@ -118,6 +118,7 @@ public class Umpire {
 	protected MoveResult processMove(Move move, Player virusStatus) {
     	switch (move.getMoveType()) {
     	case PASS:
+    	case ERROR:
     		return MoveResult.pass(virusStatus.getId());
     	case FIRE:
     		return processFiring(move, virusStatus);

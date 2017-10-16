@@ -20,17 +20,29 @@ public class PlayerTester {
     	
     	String progress = "";
     	boolean passed = true;
+    	
     	try {
     		progress = "Checking startGame...";
     		Move move = virus.startGame(40, 20, 2, 0);
     		
-    		if (move.moveType != MoveType.SPAWN) {
+    		if (move.moveType == MoveType.ERROR) {
+    			progress += "failed...\n" + move.errorMessage;
+    			passed = false;
+    			
+    			// Catastrophic, bail.
+    			result.setMessage(progress);
+    	    	result.setPassed(false);
+    	    	
+    	    	return result;
+    			
+    		} else if (move.moveType != MoveType.SPAWN) {
     			progress += "failed... did not SPAWN.";
     			passed = false;
     		} else {
     			progress += "passed...";
     		}
-    			
+    		
+    		progress += "Sending move notifications...";
     		List<MoveNotification> moveList = new ArrayList<MoveNotification>();
     		moveList.add( 
     				new MoveNotification( 
@@ -45,12 +57,21 @@ public class PlayerTester {
         				    MoveResult.spawnMISS(1, 0, 0), 40, 20, 10, 10));
     		}
     		
-    		progress += "Sending move notifications...";
     		virus.moveNotification(moveList);
     		progress += "passed...";
 
     		progress += "Requesting next move...";
     		move = virus.nextMove();
+    		if (move.moveType == MoveType.ERROR) {
+    			progress += "failed...\n" + move.errorMessage;
+    			passed = false;
+    			
+    			// Catastrophic, bail.
+    			result.setMessage(progress);
+    	    	result.setPassed(false);
+    	    	
+    	    	return result;  			
+    		}
     		progress += "passed...";
 
     		progress += "Communicating winner...";
@@ -65,8 +86,11 @@ public class PlayerTester {
 	    	return result;
     		
     	} catch (Exception e) {
-			progress += "=> Exception " + e.getMessage();
-			
+    		progress += "=> Exception " + e.getMessage();
+    		
+    		Logger.logMessage(this.getClass(), "testVirus", Logger.WARNING, progress);
+			Logger.logException(this.getClass(), "testVirus", Logger.WARNING, e);
+						
 			result.setMessage(progress);
 	    	result.setPassed(false);
 	    	
